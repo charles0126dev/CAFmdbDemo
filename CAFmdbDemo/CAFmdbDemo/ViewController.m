@@ -43,17 +43,24 @@
             
             if (![db executeStatements:sql]) {
                 NSLog(@"操作数据库失败");
+                [self failureHandler:@"操作数据库失败"];
             } else {
                 NSLog(@"操作数据库成功");
+                [self successHandler:@"操作数据库成功"];
             }
             [db close];
         }
     }
 }
 
+#pragma mark - database operation
+
 - (IBAction)queryData:(id)sender {
     
+    self.resultsTextView.text = @"";
+    
     // You must always invoke -[FMResultSet next] before attempting to access the values returned in a query, even if you're only expecting one
+    NSMutableString *results = [[NSMutableString alloc] init];
     if ([db open]) {
         FMResultSet *resultSet = [db executeQuery:@"select * from userinfo"];
         while ([resultSet next]) {
@@ -63,9 +70,14 @@
             int age = [resultSet intForColumn:@"age"];
             NSString *gender = [resultSet stringForColumn:@"gender"];
             
+            [results appendString:[NSString stringWithFormat:@"uid:%d name:%@ age:%d gender:%@\n", userId, name, age, gender]];
+            
             NSLog(@"uid:%d name:%@ age:%d gender:%@", userId, name, age, gender);
+            [self successHandler:@"查询数据库成功"];
         }
     }
+    
+    self.resultsTextView.text = results;
     
     [db close];
 }
@@ -86,8 +98,10 @@
             [db executeUpdate:@"INSERT INTO userinfo (name, age, gender) VALUES (:name, :age, :gender)" withParameterDictionary:argsDict];
             if (![db executeUpdate:@"INSERT INTO userinfo (name, age, gender) VALUES (:name, :age, :gender)" withParameterDictionary:argsDict]) {
                 NSLog(@"操作数据库错误");
+                [self failureHandler:@"插入数据库失败"];
             } else {
                 NSLog(@"数据 (%@, %d, %@) 插入成功", name, age, (age % 2) == 0 ? @"Male" : @"Female");
+                [self successHandler:@"插入数据库成功"];
             }
         }
     }
@@ -100,8 +114,10 @@
     if ([db open]) {
         if (![db executeUpdate:@"delete from userinfo"]) {
             NSLog(@"操作数据库失败");
+            [self failureHandler:@"删除数据库失败"];
         } else {
             NSLog(@"操作数据库成功");
+            [self successHandler:@"删除数据库成功"];
         }
     }
     
@@ -110,6 +126,23 @@
 
 - (IBAction)updateData:(id)sender {
     
+}
+
+#pragma mark - Show Message
+
+- (void)successHandler:(NSString *)message {
+    
+    [self showMessage:message];
+}
+
+- (void)failureHandler:(NSString *)message {
+
+    [self showMessage:message];
+}
+
+- (void)showMessage:(NSString *)message {
+
+    self.messageLabel.text = message;
 }
 
 - (void)didReceiveMemoryWarning {
